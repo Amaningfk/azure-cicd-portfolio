@@ -1,0 +1,10 @@
+.git
+.github
+terraform
+k8s
+infra
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+.htmlvalidate.json
