@@ -1,0 +1,69 @@
+name: Stage - Quality
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  TERRAFORM_VERSION: "1.9.8"
+
+jobs:
+  site:
+    name: Lint the site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - name: Validate the HTML
+        run: npm run lint:html
+      - name: Verify every referenced asset exists
+        run: npm run lint:assets
+
+  infra:
+    name: Validate infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile the Bicep template
+        run: |
+          az bicep install
+          az bicep build --file infra/main.bicep --stdout > /dev/null
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - name: terraform fmt and validate
+        working-directory: terraform
+        run: |
+          terraform fmt -check -diff
+          terraform init -backend=false -input=false
+          terraform validate
+
+  manifests:
+    name: Validate manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSLo /tmp/kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          tar -xzf /tmp/kc.tgz -C /usr/local/bin kubeconform
+      - name: Strict schema validation
+        run: kubeconform -strict -summary k8s/
+
+  workflows:
+    name: Lint the workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --quiet yamllint
+      - name: yamllint
+        run: |
+          printf 'extends: relaxed\nrules:\n  line-length:\n    max: 200\n' > /tmp/yamllint.yml
+          yamllint -c /tmp/yamlint.yml .github/workflows
