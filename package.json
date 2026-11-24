@@ -1,0 +1,15 @@
+{
+  "name": "azure-cicd-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static site with a full validation and release pipeline.",
+  "scripts": {
+    "lint:html": "html-validate site/index.html",
+    "lint:assets": "node .github/scripts/check-assets.mjs",
+    "build": "node scripts/build.mjs",
+    "test:smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "html-validate": "8.24.0"
+  }
+}
