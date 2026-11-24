@@ -1,0 +1,53 @@
+name: Stage - Verify
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  smoke:
+    name: Smoke test the artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-${{ github.sha }}
+          path: dist
+      - name: Serve and probe
+        run: node scripts/smoke.mjs
+
+  container:
+    name: Build and probe the container
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t portfolio:${{ github.sha }} .
+      - name: Run it and wait for it to answer
+        run: |
+          docker run -d --name site -p 8080:8080 portfolio:${{ github.sha }}
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/ > /dev/null; then echo "up after ${i}s"; break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/ | grep -q 'Azure CI/CD, end to end'
+      - name: Scan the image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: portfolio:${{ github.sha }}
+          format: table
+          exit-code: "0"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: Logs on failure
+        if: failure()
+        run: docker logs site || true
