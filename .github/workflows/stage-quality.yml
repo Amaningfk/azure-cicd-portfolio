@@ -66,4 +66,4 @@ jobs:
       - name: yamllint
         run: |
           printf 'extends: relaxed\nrules:\n  line-length:\n    max: 200\n' > /tmp/yamllint.yml
-          yamllint -c /tmp/yamlint.yml .github/workflows
+          yamllint -c /tmp/yamllint.yml .github/workflows
