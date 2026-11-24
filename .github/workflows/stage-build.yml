@@ -1,0 +1,41 @@
+name: Stage - Build
+
+on:
+  workflow_call:
+    outputs:
+      artifact:
+        description: Name of the uploaded artifact
+        value: ${{ jobs.build.outputs.artifact }}
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  build:
+    name: Build the site
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: site-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - name: Build with the commit stamped in
+        run: npm run build
+      - name: Record the build in the job summary
+        run: |
+          echo '### Build output' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -la dist >> $GITHUB_STEP_SUMMARY
+          cat dist/build-info.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-${{ github.sha }}
+          path: dist
+          retention-days: 14
