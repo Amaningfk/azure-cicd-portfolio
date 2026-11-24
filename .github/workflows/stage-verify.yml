@@ -41,7 +41,7 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8080/ | grep -q 'Azure CI/CD, end to end'
       - name: Scan the image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: portfolio:${{ github.sha }}
           format: table
