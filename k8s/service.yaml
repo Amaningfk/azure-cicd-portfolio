@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: portfolio-site
+  namespace: portfolio
+  labels:
+    app.kubernetes.io/name: portfolio-site
+    app.kubernetes.io/part-of: azure-cicd-portfolio
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: portfolio-site
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
